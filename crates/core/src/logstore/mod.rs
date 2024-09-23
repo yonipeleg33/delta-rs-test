@@ -1,5 +1,5 @@
 //! Delta log store.
-use std::io::{BufRead, BufReader, Cursor};
+use std::io::{BufRead, BufReader, Cursor, Write};
 use std::sync::OnceLock;
 use std::{cmp::max, collections::HashMap, sync::Arc};
 
@@ -124,6 +124,18 @@ pub fn logstore_for(
     Err(DeltaTableError::InvalidTableLocation(location.into()))
 }
 
+fn write_log(val: &str) {
+    let path = "./patura2.log";
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(path)
+        .expect("Unable to open log file");
+    file.write_all((val.to_string() + "\n").as_bytes())
+        .expect("Unable to write to log file");
+}
+
 /// Return the [LogStoreRef] using the given [ObjectStoreRef]
 pub fn logstore_with(
     store: ObjectStoreRef,
@@ -131,22 +143,31 @@ pub fn logstore_with(
     options: impl Into<StorageOptions> + Clone,
     io_runtime: Option<IORuntime>,
 ) -> DeltaResult<LogStoreRef> {
+    write_log("logstore_with 1");
     let scheme = Url::parse(&format!("{}://", location.scheme()))
         .map_err(|_| DeltaTableError::InvalidTableLocation(location.clone().into()))?;
-
+    write_log("logstore_with 2");
     let store = if let Some(io_runtime) = io_runtime {
+        write_log("logstore_with 3.1");
         Arc::new(DeltaIOStorageBackend::new(store, io_runtime.get_handle())) as ObjectStoreRef
     } else {
+        write_log("logstore_with 3.2");
         store
     };
 
-    if let Some(factory) = logstores().get(&scheme) {
+    let arc = logstores();
+    write_log("logstore_with 4");
+    let option = arc.get(&scheme);
+    write_log("logstore_with 5");
+    if let Some(factory) = option {
+        write_log("logstore_with 6.1");
         debug!("Found a logstore provider for {scheme}");
         return factory.with_options(store, &location, &options.into());
     } else {
+        write_log("logstore_with 6.2");
         println!("Could not find a logstore for the scheme {scheme}");
         warn!("Could not find a logstore for the scheme {scheme}");
-    }
+    };
     Err(DeltaTableError::InvalidTableLocation(
         location.clone().into(),
     ))
