@@ -155,11 +155,7 @@ pub fn logstore_with(
         store
     };
 
-    let arc = logstores();
-    write_log("logstore_with 4");
-    let option = arc.get(&scheme);
-    write_log("logstore_with 5");
-    if let Some(factory) = option {
+    if let Some(factory) = logstores().get(&scheme) {
         write_log("logstore_with 6.1");
         debug!("Found a logstore provider for {scheme}");
         return factory.with_options(store, &location, &options.into());
