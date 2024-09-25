@@ -22,7 +22,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::log::*;
 use url::Url;
-
+use deltalake_core::logstore::write_log;
 use crate::constants;
 use crate::errors::DynamoDbConfigError;
 #[cfg(feature = "native-tls")]
@@ -248,12 +248,15 @@ where
     T: Send,
     F: Future<Output = T> + Send,
 {
+    write_log("execute_sdk_future 1");
     match tokio::runtime::Handle::try_current() {
         Ok(handle) => match handle.runtime_flavor() {
             tokio::runtime::RuntimeFlavor::MultiThread => {
+                write_log("execute_sdk_future 2");
                 Ok(tokio::task::block_in_place(move || handle.block_on(future)))
             }
             _ => {
+                write_log("execute_sdk_future 3");
                 let mut cfg: Option<T> = None;
                 std::thread::scope(|scope| {
                     scope.spawn(|| {
@@ -269,6 +272,7 @@ where
             }
         },
         Err(_) => {
+            write_log("execute_sdk_future 3");
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
