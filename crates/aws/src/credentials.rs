@@ -18,7 +18,7 @@ use deltalake_core::storage::object_store::{
 use deltalake_core::storage::StorageOptions;
 use deltalake_core::DeltaResult;
 use tracing::log::*;
-
+use deltalake_core::logstore::write_log;
 use crate::constants;
 
 /// An [object_store::CredentialProvider] which handles converting a populated [SdkConfig]
@@ -155,10 +155,12 @@ fn assume_session_name(options: &StorageOptions) -> String {
 /// Take a set of [StorageOptions] and produce an appropriate AWS SDK [SdkConfig]
 /// for use with various AWS SDK APIs, such as in our [crate::logstore::S3DynamoDbLogStore]
 pub async fn resolve_credentials(options: StorageOptions) -> DeltaResult<SdkConfig> {
+    write_log("resolve_credentials 1");
     let default_provider = DefaultCredentialsChain::builder().build().await;
-
+    write_log("resolve_credentials 2");
     let credentials_provider = match assume_role_arn(&options) {
         Some(arn) => {
+            write_log("resolve_credentials 3");
             debug!("Configuring AssumeRoleProvider with role arn: {arn}");
             CredentialsProviderChain::first_try(
                 "AssumeRoleProvider",
@@ -170,11 +172,14 @@ pub async fn resolve_credentials(options: StorageOptions) -> DeltaResult<SdkConf
             .or_else("StorageOptions", OptionsCredentialsProvider { options })
             .or_else("DefaultChain", default_provider)
         }
-        None => CredentialsProviderChain::first_try(
-            "StorageOptions",
-            OptionsCredentialsProvider { options },
-        )
-        .or_else("DefaultChain", default_provider),
+        None => {
+            write_log("resolve_credentials 4");
+            CredentialsProviderChain::first_try(
+                "StorageOptions",
+                OptionsCredentialsProvider { options },
+            )
+                .or_else("DefaultChain", default_provider)
+        },
     };
 
     Ok(aws_config::from_env()
