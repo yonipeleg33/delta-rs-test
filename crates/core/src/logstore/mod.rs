@@ -41,7 +41,9 @@ pub trait LogStoreFactory: Send + Sync {
         options: &StorageOptions,
     ) -> DeltaResult<Arc<dyn LogStore>> {
         write_log("with_options 1");
-        Ok(default_logstore(store, location, options))
+        let arc = default_logstore(store, location, options);
+        write_log("with_options 2");
+        Ok(arc)
     }
 }
 
@@ -51,13 +53,18 @@ pub fn default_logstore(
     location: &Url,
     options: &StorageOptions,
 ) -> Arc<dyn LogStore> {
-    Arc::new(default_logstore::DefaultLogStore::new(
+    write_log("default_logstore 1");
+    let config = LogStoreConfig {
+        location: location.clone(),
+        options: options.clone(),
+    };
+    write_log("default_logstore 2");
+    let log_store = default_logstore::DefaultLogStore::new(
         store,
-        LogStoreConfig {
-            location: location.clone(),
-            options: options.clone(),
-        },
-    ))
+        config,
+    );
+    write_log("default_logstore 3");
+    Arc::new(log_store)
 }
 
 #[derive(Clone, Debug, Default)]
