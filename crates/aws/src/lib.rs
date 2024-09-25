@@ -80,6 +80,7 @@ impl LogStoreFactory for S3LogStoreFactory {
 
         write_log("S3LogStoreFactory with_options 8");
         let s3_options = S3StorageOptions::from_map(&options.0)?;
+        write_log("S3LogStoreFactory with_options 8.1");
 
         if s3_options.locking_provider.as_deref() != Some("dynamodb") {
             write_log("S3LogStoreFactory with_options 9");
