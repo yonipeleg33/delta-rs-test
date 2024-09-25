@@ -156,7 +156,9 @@ pub fn logstore_with(
     if let Some(factory) = logstores().get(&scheme) {
         write_log("logstore_with 3");
         debug!("Found a logstore provider for {scheme}");
-        let result = factory.with_options(store, &location, &options.into());
+        let x = &*factory;
+        write_log("logstore_with 3.1");
+        let result = x.with_options(store, &location, &options.into());
         write_log("logstore_with 4");
         return result;
     } else {
