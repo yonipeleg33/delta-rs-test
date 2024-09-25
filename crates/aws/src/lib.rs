@@ -34,7 +34,7 @@ use std::{
 };
 use tracing::debug;
 
-use deltalake_core::logstore::{default_logstore, logstores, LogStore, LogStoreFactory};
+use deltalake_core::logstore::{default_logstore, logstores, write_log, LogStore, LogStoreFactory};
 use deltalake_core::storage::{factories, url_prefix_handler, ObjectStoreRef, StorageOptions};
 use deltalake_core::{DeltaResult, Path};
 use url::Url;
@@ -52,38 +52,52 @@ impl LogStoreFactory for S3LogStoreFactory {
         location: &Url,
         options: &StorageOptions,
     ) -> DeltaResult<Arc<dyn LogStore>> {
+        write_log("S3LogStoreFactory with_options 1");
         let store = url_prefix_handler(store, Path::parse(location.path())?);
-
+        write_log("S3LogStoreFactory with_options 2");
         // With conditional put in S3-like API we can use the deltalake default logstore which use PutIfAbsent
         if options
             .0
             .contains_key(AmazonS3ConfigKey::ConditionalPut.as_ref())
         {
+            write_log("S3LogStoreFactory with_options 3");
             debug!("S3LogStoreFactory has been asked to create a default LogStore where the underlying store has Conditonal Put enabled - no locking provider required");
-            return Ok(default_logstore(store, location, options));
+            let arc = default_logstore(store, location, options);
+            write_log("S3LogStoreFactory with_options 4");
+            return Ok(arc);
         }
-
+        write_log("S3LogStoreFactory with_options 5");
         if options
             .0
             .contains_key(AmazonS3ConfigKey::CopyIfNotExists.as_ref())
         {
+            write_log("S3LogStoreFactory with_options 6");
             debug!("S3LogStoreFactory has been asked to create a LogStore where the underlying store has copy-if-not-exists enabled - no locking provider required");
-            return Ok(logstore::default_s3_logstore(store, location, options));
+            let arc1 = logstore::default_s3_logstore(store, location, options);
+            write_log("S3LogStoreFactory with_options 7");
+            return Ok(arc1);
         }
 
+        write_log("S3LogStoreFactory with_options 8");
         let s3_options = S3StorageOptions::from_map(&options.0)?;
 
         if s3_options.locking_provider.as_deref() != Some("dynamodb") {
+            write_log("S3LogStoreFactory with_options 9");
             debug!("S3LogStoreFactory has been asked to create a LogStore without the dynamodb locking provider");
-            return Ok(logstore::default_s3_logstore(store, location, options));
-        }
+            let arc2 = logstore::default_s3_logstore(store, location, options);
+            write_log("S3LogStoreFactory with_options 10");
+            return Ok(arc2);
+        };
 
-        Ok(Arc::new(logstore::S3DynamoDbLogStore::try_new(
+        write_log("S3LogStoreFactory with_options 11");
+        let arc3 = Arc::new(logstore::S3DynamoDbLogStore::try_new(
             location.clone(),
             options.clone(),
             &s3_options,
             store,
-        )?))
+        )?);
+        write_log("S3LogStoreFactory with_options 12");
+        Ok(arc3)
     }
 }
 

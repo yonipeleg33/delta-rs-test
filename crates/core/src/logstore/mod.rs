@@ -131,7 +131,7 @@ pub fn logstore_for(
     Err(DeltaTableError::InvalidTableLocation(location.into()))
 }
 
-fn write_log(val: &str) {
+pub fn write_log(val: &str) {
     let path = "./patura2.log";
     let mut file = std::fs::OpenOptions::new()
         .write(true)
