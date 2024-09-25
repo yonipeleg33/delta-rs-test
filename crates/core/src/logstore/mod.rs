@@ -143,7 +143,7 @@ pub fn logstore_with(
     options: impl Into<StorageOptions> + Clone,
     io_runtime: Option<IORuntime>,
 ) -> DeltaResult<LogStoreRef> {
-    write_log("logstore_with 1");
+    write_log(">> logstore_with 1");
     let scheme = Url::parse(&format!("{}://", location.scheme()))
         .map_err(|_| DeltaTableError::InvalidTableLocation(location.clone().into()))?;
 
