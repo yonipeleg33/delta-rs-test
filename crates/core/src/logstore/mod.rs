@@ -40,6 +40,7 @@ pub trait LogStoreFactory: Send + Sync {
         location: &Url,
         options: &StorageOptions,
     ) -> DeltaResult<Arc<dyn LogStore>> {
+        write_log("with_options 1");
         Ok(default_logstore(store, location, options))
     }
 }
@@ -155,9 +156,11 @@ pub fn logstore_with(
     if let Some(factory) = logstores().get(&scheme) {
         write_log("logstore_with 3");
         debug!("Found a logstore provider for {scheme}");
-        return factory.with_options(store, &location, &options.into());
-    } else {
+        let result = factory.with_options(store, &location, &options.into());
         write_log("logstore_with 4");
+        return result;
+    } else {
+        write_log("logstore_with other branch");
         println!("Could not find a logstore for the scheme {scheme}");
         warn!("Could not find a logstore for the scheme {scheme}");
     }
