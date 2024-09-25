@@ -2,7 +2,7 @@
 use std::io::{BufRead, BufReader, Cursor, Write};
 use std::sync::OnceLock;
 use std::{cmp::max, collections::HashMap, sync::Arc};
-
+use std::ops::Deref;
 use bytes::Bytes;
 use dashmap::DashMap;
 use futures::StreamExt;
@@ -148,17 +148,21 @@ pub fn logstore_with(
         .map_err(|_| DeltaTableError::InvalidTableLocation(location.clone().into()))?;
 
     let store = if let Some(io_runtime) = io_runtime {
+        write_log("logstore_with some io_runtime");
         Arc::new(DeltaIOStorageBackend::new(store, io_runtime.get_handle())) as ObjectStoreRef
     } else {
+        write_log("logstore_with no io_runtime");
         store
     };
     write_log("logstore_with 2");
     if let Some(factory) = logstores().get(&scheme) {
         write_log("logstore_with 3");
         debug!("Found a logstore provider for {scheme}");
-        let x = &*factory;
+        let x = factory.deref();
         write_log("logstore_with 3.1");
-        let result = x.with_options(store, &location, &options.into());
+        let options1 = options.into();
+        write_log("logstore_with 3.2");
+        let result = x.with_options(store, &location, &options1);
         write_log("logstore_with 4");
         return result;
     } else {
